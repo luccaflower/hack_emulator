@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 /*
@@ -189,20 +190,25 @@ void test_select_m_for_alu(void) {
   TEST_ASSERT_EQUAL(10, *actual);
 }
 
-#define KEYBOARD 0x6000
-#define SCREEN 0x4000
+void test_set_a_register(void) {
+  state *state = new_state();
+  uint16_t inst = 5;
+  process_inst(state, inst);
+  TEST_ASSERT_EQUAL(5, state->a_register);
+}
 
-struct state {
-  a_val program_counter;
-  a_val a_register;
-  hack_val d_register;
-  hack_val *ram;
-};
-typedef struct state state;
+void test_output_to_d(void) {
+  state *state = new_state();
+  state->a_register = 10;
+  uint16_t inst = 0x8000 + ZX_BIT + NX_BIT + A_VAL_BIT + DEST_D_BIT;
+  process_inst(state, inst);
+  TEST_ASSERT_EQUAL(10, state->d_register);
+}
 
-state *new_state(void) {
-  hack_val *ram = calloc(1, 0x6001 * sizeof(*ram));
-  state *s = calloc(1, sizeof(*s));
-  s->ram = ram;
-  return s;
+void test_output_to_m(void) {
+  state *state = new_state();
+  state->a_register = 10;
+  uint16_t inst = 0x8000 + ZX_BIT + NX_BIT + A_VAL_BIT + DEST_M_BIT;
+  process_inst(state, inst);
+  TEST_ASSERT_EQUAL(10, state->ram[10]);
 }

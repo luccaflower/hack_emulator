@@ -1,5 +1,39 @@
 #include "emulator.h"
 #include <assert.h>
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdlib.h>
+
+void process_inst(state *state, uint16_t inst) {
+  if (inst & 0x8000) {
+    hack_val a = state->a_register;
+    hack_val x = state->d_register;
+    hack_val y = *select_a_or_m(inst, &a, &(state->ram[a]));
+    hack_val alu_out = calculate(inst, x, y);
+    if (inst & DEST_M_BIT) {
+      state->ram[a] = alu_out;
+    }
+    if (inst & DEST_D_BIT) {
+      state->d_register = alu_out;
+    }
+    if (inst & DEST_A_BIT) {
+      assert(alu_out > 0);
+      state->a_register = alu_out;
+    }
+    state->pc = program_counter(inst, alu_out, state->pc, state->a_register);
+  } else {
+    state->a_register = inst & 0x7FFF;
+    state->pc++;
+  }
+}
+
+state *new_state(void) {
+  hack_val *ram = calloc(1, 0x6001 * sizeof(*ram));
+  state *s = calloc(1, sizeof(*s));
+  s->ram = ram;
+  return s;
+}
+
 hack_val calculate(const c_instruction inst, hack_val x, hack_val y) {
   hack_val result;
   if (ZX_BIT & inst) {
@@ -89,7 +123,9 @@ a_val program_counter(const c_instruction inst, const hack_val alu_out,
 hack_val *select_a_or_m(const c_instruction inst, hack_val *restrict a,
                         hack_val *restrict m) {
   if (inst & A_VAL_BIT)
-    return a; // undefined behavior tho...
+    return a;
   else
     return m;
 }
+
+bool is_a_instruction(const uint16_t inst) { return inst & 0x8000; }
