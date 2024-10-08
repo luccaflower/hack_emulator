@@ -1,4 +1,5 @@
 #include "emulator.h"
+#include <assert.h>
 hack_val calculate(const c_instruction inst, hack_val x, hack_val y) {
   hack_val result;
   if (ZX_BIT & inst) {
@@ -83,4 +84,12 @@ a_val program_counter(const c_instruction inst, const hack_val alu_out,
     break;
   }
   return program_counter;
+}
+
+hack_val *select_a_or_m(const c_instruction inst, hack_val *restrict a,
+                        hack_val *restrict m) {
+  if (inst & A_VAL_BIT)
+    return a; // undefined behavior tho...
+  else
+    return m;
 }

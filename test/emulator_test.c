@@ -1,7 +1,9 @@
 #include "emulator.h"
 #include "unity.h"
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 /*
  * ALU PROCESSING
@@ -170,4 +172,37 @@ void test_jump_le_0(void) {
   c_instruction inst = 6;
   a_val actual = program_counter(inst, -1, 4, 24);
   TEST_ASSERT_EQUAL(24, actual);
+}
+void test_select_a_for_alu(void) {
+  const c_instruction inst = 0x1000;
+  hack_val a = 5;
+  hack_val m = 10;
+  hack_val *actual = select_a_or_m(inst, &a, &m);
+  TEST_ASSERT_EQUAL(5, *actual);
+}
+
+void test_select_m_for_alu(void) {
+  const c_instruction inst = 0;
+  hack_val a = 5;
+  hack_val m = 10;
+  hack_val *actual = select_a_or_m(inst, &a, &m);
+  TEST_ASSERT_EQUAL(10, *actual);
+}
+
+#define KEYBOARD 0x6000
+#define SCREEN 0x4000
+
+struct state {
+  a_val program_counter;
+  a_val a_register;
+  hack_val d_register;
+  hack_val *ram;
+};
+typedef struct state state;
+
+state *new_state(void) {
+  hack_val *ram = calloc(1, 0x6001 * sizeof(*ram));
+  state *s = calloc(1, sizeof(*s));
+  s->ram = ram;
+  return s;
 }
