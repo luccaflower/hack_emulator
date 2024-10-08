@@ -9,3 +9,7 @@ typedef int16_t hack_val;
 #define F_BIT 0x0080
 #define NO_BIT 0x0040
 hack_val calculate(const c_instruction inst, hack_val x, hack_val y);
+
+typedef uint16_t a_val;
+a_val program_counter(const c_instruction inst, const hack_val alu_out,
+                      a_val program_counter, const a_val a_reg);
