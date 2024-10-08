@@ -74,11 +74,13 @@ a_val program_counter(const c_instruction inst, const hack_val alu_out,
       program_counter = a_reg;
     else
       program_counter++;
+    break;
   case JLE:
     if (alu_out <= 0)
       program_counter = a_reg;
     else
       program_counter++;
+    break;
   }
   return program_counter;
 }
