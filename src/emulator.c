@@ -1,25 +1,39 @@
 #include "emulator.h"
 #include <assert.h>
+#include <bits/types/struct_timeval.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 #include <unistd.h>
 
+void print_system_info(state *state) {
+  printf("pc: %d\n", state->pc);
+  printf("a:%d\n", state->a_register);
+  printf("d:%d\n", state->d_register);
+  printf("m:%d\n", state->ram[state->a_register]);
+  printf("sp: %d\n", state->ram[0]);
+}
+
+#define RENDER_FREQ 1000 / 10
 void program_loop(uint16_t *instructions) {
   state *state = new_state();
+  struct timeval t_start, t_current;
+  double elapsed_time;
+  gettimeofday(&t_start, NULL);
   while (true) {
     process_inst(state, instructions[state->pc]);
     assert(state->pc <= 0x8000 && "PC out of bounds");
-    render(&(state->ram[0x4000]), 512, 256, stdout);
-    printf("instruction: %d\n", instructions[state->pc]);
-    printf("pc: %d\n", state->pc);
-    printf("a:%d\n", state->a_register);
-    printf("d:%d\n", state->d_register);
-    printf("m:%d\n", state->ram[state->a_register]);
-    printf("sp: %d\n", state->ram[0]);
-    usleep(10);
-    printf("\e[1;1H\e[2J");
+    gettimeofday(&t_current, NULL);
+    elapsed_time = (((t_current.tv_sec - t_start.tv_sec) * 1000) +
+                    (t_current.tv_usec - t_start.tv_usec) / 1000);
+    if (elapsed_time >= RENDER_FREQ) {
+      render(&(state->ram[0x4000]), 512, 128, stdout);
+      gettimeofday(&t_start, NULL);
+      print_system_info(state);
+      printf("\e[1;1H\e[2J");
+    }
   }
 }
 
