@@ -16,20 +16,20 @@ void print_system_info(state *state) {
   printf("sp: %d\n", state->ram[0]);
 }
 
-#define RENDER_FREQ 1000 / 10
+#define RENDER_FREQ 1000000 / 15
 void program_loop(uint16_t *instructions) {
   state *state = new_state();
   struct timeval t_start, t_current;
-  double elapsed_time;
+  size_t elapsed_time;
   gettimeofday(&t_start, NULL);
   while (true) {
     process_inst(state, instructions[state->pc]);
     assert(state->pc <= 0x8000 && "PC out of bounds");
     gettimeofday(&t_current, NULL);
-    elapsed_time = (((t_current.tv_sec - t_start.tv_sec) * 1000) +
-                    (t_current.tv_usec - t_start.tv_usec) / 1000);
+    elapsed_time = ((t_current.tv_sec - t_start.tv_sec) * 1000000) +
+                   (t_current.tv_usec - t_start.tv_usec);
     if (elapsed_time >= RENDER_FREQ) {
-      render(&(state->ram[0x4000]), 512, 128, stdout);
+      render(&(state->ram[0x4000]), 512, 256, stdout);
       gettimeofday(&t_start, NULL);
       print_system_info(state);
       printf("\e[1;1H\e[2J");
@@ -158,7 +158,7 @@ void render(hack_val *memory_map, uint16_t width, uint16_t height,
   for (size_t y = 0; y < height; y++) {
     for (size_t x = 0; x < words_per_row; x++) {
       uint16_t val = memory_map[words_per_row * y + x];
-      for (size_t bit_mask = 0x8000; bit_mask > 0; bit_mask >>= 1) {
+      for (size_t bit_mask = 1; bit_mask <= 0x8000; bit_mask <<= 1) {
         if (val & bit_mask) {
           buf[buf_cursor] = '@';
         } else {

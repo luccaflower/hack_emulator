@@ -243,7 +243,7 @@ void test_render_last_pixel_single_row(void) {
   FILE *screen = fmemopen(buf, 18, "w+");
   render(map, 16, 1, screen);
   fclose(screen);
-  TEST_ASSERT_EQUAL_STRING("               @\n", buf);
+  TEST_ASSERT_EQUAL_STRING("@               \n", buf);
 }
 
 void test_render_first_half_of_pixels_single_row(void) {
@@ -252,7 +252,7 @@ void test_render_first_half_of_pixels_single_row(void) {
   FILE *screen = fmemopen(buf, 18, "w+");
   render(map, 16, 1, screen);
   fclose(screen);
-  TEST_ASSERT_EQUAL_STRING("@@@@@@@@        \n", buf);
+  TEST_ASSERT_EQUAL_STRING("        @@@@@@@@\n", buf);
 }
 
 void test_render_upper_row(void) {
