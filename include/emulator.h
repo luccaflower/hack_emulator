@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 
 typedef struct state state;
 
@@ -32,11 +33,20 @@ void process_inst(state *state, uint16_t inst);
 #define NO_BIT 0x0040
 hack_val calculate(const uint16_t inst, hack_val x, hack_val y);
 
+enum JUMP {
+  NO_JMP = 0,
+  JGT = 1,
+  JEQ = 2,
+  JGE = 3,
+  JLT = 4,
+  JNE = 5,
+  JLE = 6,
+  JMP = 7
+};
+
 hack_val program_counter(const uint16_t inst, const hack_val alu_out,
                          uint16_t program_counter, const hack_val a_reg);
 
 #define A_VAL_BIT 0x1000
-
-hack_val *select_a_or_m(const uint16_t inst, hack_val *restrict a,
-                        hack_val *restrict m);
-void render(hack_val *screen, uint16_t width, uint16_t height);
+void render(hack_val *memory_map, uint16_t width, uint16_t height,
+            FILE *screen);

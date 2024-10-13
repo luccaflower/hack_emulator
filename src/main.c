@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
       case '0':
         break;
       case '1':
-        instruction += 1 << (15 - i);
+        instruction = instruction + (1 << (15 - i));
         break;
       default:
         printf("Unknown char: %c\n", buf[i]);
@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   if (feof(f))
     puts("End of file reached");
   else {
-    puts("some kinda error");
+    puts("Error reading file");
     exit(EXIT_FAILURE);
   }
   fclose(f);

@@ -10,19 +10,16 @@ void program_loop(uint16_t *instructions) {
   state *state = new_state();
   while (true) {
     process_inst(state, instructions[state->pc]);
-    if (state->pc > 0x8000) {
-      puts("PC out of bounds");
-      exit(EXIT_FAILURE);
-    }
-    // render(&(state->ram[0x4000]), 512, 256);
-    // printf("instruction: %d\n", instructions[state->pc]);
-    // printf("pc: %d\n", state->pc);
-    // printf("a:%d\n", state->a_register);
-    // printf("d:%d\n", state->d_register);
-    // printf("m:%d\n", state->ram[state->a_register]);
-    // printf("sp: %d\n", state->ram[0]);
-    // printf("\e[1;1H\e[2J");
-    usleep(1000);
+    assert(state->pc <= 0x8000 && "PC out of bounds");
+    render(&(state->ram[0x4000]), 512, 256, stdout);
+    printf("instruction: %d\n", instructions[state->pc]);
+    printf("pc: %d\n", state->pc);
+    printf("a:%d\n", state->a_register);
+    printf("d:%d\n", state->d_register);
+    printf("m:%d\n", state->ram[state->a_register]);
+    printf("sp: %d\n", state->ram[0]);
+    usleep(10);
+    printf("\e[1;1H\e[2J");
   }
 }
 
@@ -30,10 +27,13 @@ void process_inst(state *state, uint16_t inst) {
   if (inst & 0x8000) {
     hack_val a = state->a_register;
     hack_val x = state->d_register;
-    hack_val y = *select_a_or_m(inst, &a, &(state->ram[a]));
+    hack_val y;
+
+    if (inst & A_VAL_BIT)
+      y = state->ram[a];
+    else
+      y = a;
     hack_val alu_out = calculate(inst, x, y);
-    // printf("x: %d, y: %d\n", x, y);
-    // printf("alu_out: %d\n", alu_out);
     if (inst & DEST_M_BIT) {
       state->ram[a] = alu_out;
     }
@@ -41,7 +41,7 @@ void process_inst(state *state, uint16_t inst) {
       state->d_register = alu_out;
     }
     if (inst & DEST_A_BIT) {
-      assert(alu_out > 0);
+      assert(alu_out >= 0 && "A register cannot be negative");
       state->a_register = alu_out;
     }
     state->pc = program_counter(inst, alu_out, state->pc, state->a_register);
@@ -82,17 +82,6 @@ hack_val calculate(const uint16_t inst, hack_val x, hack_val y) {
   }
   return result;
 }
-
-enum JUMP {
-  NO_JMP = 0,
-  JGT = 1,
-  JEQ = 2,
-  JGE = 3,
-  JLT = 4,
-  JNE = 5,
-  JLE = 6,
-  JMP = 7
-};
 
 hack_val program_counter(const uint16_t inst, const hack_val alu_out,
                          uint16_t program_counter, const hack_val a_reg) {
@@ -144,22 +133,18 @@ hack_val program_counter(const uint16_t inst, const hack_val alu_out,
   return program_counter;
 }
 
-hack_val *select_a_or_m(const uint16_t inst, hack_val *restrict a,
-                        hack_val *restrict m) {
-  if (inst & A_VAL_BIT)
-    return a;
-  else
-    return m;
-}
-
-void render(hack_val *screen, uint16_t width, uint16_t height) {
-  char *buf = calloc(width * (height + 1), sizeof(*buf));
+void render(hack_val *memory_map, uint16_t width, uint16_t height,
+            FILE *screen) {
+  // (width + newline) * height + null-terminator
+  size_t len = (width + 1) * height + 1;
+  char *buf = calloc(len, sizeof(*buf));
+  assert(buf && "Failed to allocate buffer for rendering");
   size_t buf_cursor = 0;
-  uint16_t words_per_row = width / 16;
+  size_t words_per_row = width / 16;
   for (size_t y = 0; y < height; y++) {
     for (size_t x = 0; x < words_per_row; x++) {
-      uint16_t val = screen[words_per_row * y + x];
-      for (size_t bit_mask = 1; bit_mask <= 0x8000; bit_mask <<= 1) {
+      uint16_t val = memory_map[words_per_row * y + x];
+      for (size_t bit_mask = 0x8000; bit_mask > 0; bit_mask >>= 1) {
         if (val & bit_mask) {
           buf[buf_cursor] = '@';
         } else {
@@ -173,7 +158,6 @@ void render(hack_val *screen, uint16_t width, uint16_t height) {
   }
   buf[buf_cursor] = 0;
   buf_cursor = 0;
-  printf("\e[1;1H\e[2J");
-  fwrite(buf, sizeof(char), width * (height + 1), stdout);
+  fprintf(screen, "%s", buf);
   free(buf);
 }
